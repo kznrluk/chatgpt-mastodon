@@ -1,0 +1,12 @@
+services:
+  chatgpt-mastodon:
+    build: .
+    # or use public image
+    # image: kznrluk/chatgpt-mastodon:latest
+    environment:
+      OPENAI_API_KEY: sk-
+      SERVER_URL: https://
+      CLIENT_KEY: aWN
+      CLIENT_SECRET: fN6
+      ACCESS_TOKEN: XeF
+      BOT_ACCOUNT_NAME: chatgpt
