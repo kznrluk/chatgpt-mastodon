@@ -1,9 +1,13 @@
 # ChatGPT Mastodon Proxy
 
-ChatGPTをMastodonのメンションで利用できるようにするプロキシアプリケーションです。
+[日本語バージョンはこちら](./README-JA.md)
 
-## 使い方
-あらかじめ環境変数の設定が必要です。
+Proxy application to make ChatGPT available in Mastodon's Mention
+
+![example use case](https://raw.githubusercontent.com/kznrluk/chatgpt-mastodon/main/docs/preview.png)
+
+## Hou to use
+Environment variables must be set in advance.
 
 **Docker Compose**
 ```
@@ -20,28 +24,28 @@ ChatGPTをMastodonのメンションで利用できるようにするプロキ�
 > go run ./main.go
 ```
 
-## 環境変数の設定
+## Environment variables
 ```
-# OpenAPI APIキー
+# OpenAPI API key
 OPENAI_API_KEY=sk-
 
-# Mastodon 開発->新規アプリで取得するトークン等
+# Mastodon application tokens
 SERVER_URL=https://
 CLIENT_KEY=aWNd
 CLIENT_SECRET=fN6
 ACCESS_TOKEN=XeF
 
-# Botアカウント名
+# Bot account name
 BOT_ACCOUNT_NAME=chatgpt
 ```
 
-## アプリ作成時に必要なロール
+## Permissions required when creating an application
 ```
 read:notifications read:statuses write:statuses push
 ```
 
-## 免責
-このアプリケーションを利用したことによるトラブルの責任は一切負いかねます。特に従量課金の有料枠の利用はご注意ください。
+## Notice
+We are not responsible for any problems caused by the use of this application. Please be especially careful when using pay-as-you-go paid slots.
 
 ## License
 MIT
