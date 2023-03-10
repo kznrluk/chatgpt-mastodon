@@ -4,6 +4,8 @@
 
 Proxy application to make ChatGPT available in Mastodon's Mention
 
+[Try it now!](https://building7.social/@chatgpt)
+
 ![example use case](https://raw.githubusercontent.com/kznrluk/chatgpt-mastodon/main/docs/preview.png)
 
 ## Hou to use

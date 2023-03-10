@@ -2,6 +2,8 @@
 
 ChatGPTをMastodonのメンションで利用できるようにするプロキシアプリケーションです。
 
+[試してみる (他インスタンスからのメンションもOK)](https://building7.social/@chatgpt)
+
 ![example use case](https://raw.githubusercontent.com/kznrluk/chatgpt-mastodon/main/docs/preview.png)
 
 ## 使い方
