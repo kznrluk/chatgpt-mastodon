@@ -13,6 +13,14 @@ import (
 	"strings"
 )
 
+func splitIfOver(num int, str string) string {
+	if len(str) <= num {
+		return str
+	}
+
+	return strings.Join(strings.Split(str, "")[:num], "")
+}
+
 func textContent(s string) string {
 	doc, err := html.Parse(strings.NewReader(s))
 	if err != nil {
@@ -192,6 +200,7 @@ func main() {
 			}
 
 			message := escapeSpecialCharacter(resp.Choices[0].Message.Content)
+			message = splitIfOver(450, message)
 			fmt.Printf("%-24s: %s\n", "=> ASSISTANT", strings.ReplaceAll(message, "\n", "\\n"))
 			mc.PostStatus(context.Background(), &mastodon.Toot{
 				Status:      fmt.Sprintf("@%s %s", acct, message),
