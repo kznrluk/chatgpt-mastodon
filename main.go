@@ -13,8 +13,6 @@ import (
 	"strings"
 )
 
-var initProp = "Hello, you, the AI, will be asked to reply to a user's inquiry on a social networking site this time. There is a limit of 500 characters in a post, so you need to keep it under that. It is also best to omit redundant explanations, as long posts will occupy the timeline. Let's be friendly."
-
 func textContent(s string) string {
 	doc, err := html.Parse(strings.NewReader(s))
 	if err != nil {
@@ -51,14 +49,8 @@ func textContent(s string) string {
 	return spl[1]
 }
 
-func main() {
-	err := godotenv.Load()
-	if err != nil {
-		panic("Error loading .env file")
-	}
-
-	println("start")
-
+func connect() (*mastodon.Client, *openai.Client, error) {
+	fmt.Print("Connecting to mastodon server " + os.Getenv("SERVER_URL") + " ... ")
 	mc := mastodon.NewClient(&mastodon.Config{
 		Server:       os.Getenv("SERVER_URL"),
 		ClientID:     os.Getenv("CLIENT_KEY"),
@@ -66,24 +58,53 @@ func main() {
 		AccessToken:  os.Getenv("ACCESS_TOKEN"),
 	})
 
+	if _, err := mc.GetTimelineHome(context.Background(), nil); err != nil {
+		return &mastodon.Client{}, &openai.Client{}, err
+	}
+
+	fmt.Println("OK")
+	fmt.Print("Connecting to OpenAI server ... ")
+
 	oc := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
-	_, err = oc.CreateChatCompletion(
+	_, err := oc.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
 			Model: openai.GPT3Dot5Turbo,
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    openai.ChatMessageRoleUser,
-					Content: "Hello!",
+					Content: "Ping",
 				},
 			},
 		},
 	)
+
+	if err != nil {
+		return &mastodon.Client{}, &openai.Client{}, err
+	}
+
+	fmt.Println("OK")
+	return mc, oc, nil
+}
+
+func escapeSpecialCharacter(str string) string {
+	str = strings.ReplaceAll(str, "@", "[at]")
+	str = strings.ReplaceAll(str, "http://", "[http://]")
+	str = strings.ReplaceAll(str, "https://", "[https://]")
+	return str
+}
+
+func main() {
+	err := godotenv.Load()
+	if err != nil {
+		panic("Error loading .env file")
+	}
+
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = mc.GetTimelineHome(context.Background(), nil)
+	mc, oc, err := connect()
 	if err != nil {
 		panic(err)
 	}
@@ -113,15 +134,16 @@ func main() {
 			if t.Notification.Type != "mention" {
 				continue
 			}
-			username := t.Notification.Account.Username
-			toot := textContent(t.Notification.Status.Content)
 
-			fmt.Printf("%-16s: %s\n", username, toot)
+			if len(t.Notification.Status.Mentions) >= 2 {
+				continue
+			}
 
+			acct := t.Notification.Account.Acct
 			sc, err := mc.GetStatusContext(context.Background(), t.Notification.Status.ID)
 			if err != nil {
 				mc.PostStatus(context.Background(), &mastodon.Toot{
-					Status:      fmt.Sprintf("%s Error!", username),
+					Status:      fmt.Sprintf("%s Error!", acct),
 					InReplyToID: t.Notification.Status.ID,
 				})
 				fmt.Printf(err.Error())
@@ -130,8 +152,8 @@ func main() {
 
 			var ctx []openai.ChatCompletionMessage
 			ctx = append(ctx, openai.ChatCompletionMessage{
-				Role:    "system",
-				Content: initProp,
+				Role:    openai.ChatMessageRoleSystem,
+				Content: os.Getenv("SYSTEM_CONTEXT"),
 			})
 			for _, r := range sc.Ancestors {
 				role := openai.ChatMessageRoleUser
@@ -145,12 +167,12 @@ func main() {
 				})
 			}
 
-			fmt.Printf("%-16s: %v", "CONTEXT: ", ctx)
-
 			ctx = append(ctx, openai.ChatCompletionMessage{
 				Role:    openai.ChatMessageRoleUser,
 				Content: textContent(t.Notification.Status.Content),
 			})
+
+			fmt.Printf("%-24s: %v\n", acct, ctx[1:])
 
 			resp, err := oc.CreateChatCompletion(
 				context.Background(),
@@ -162,16 +184,17 @@ func main() {
 
 			if err != nil {
 				mc.PostStatus(context.Background(), &mastodon.Toot{
-					Status:      fmt.Sprintf("%s Error!", username),
+					Status:      fmt.Sprintf("%s Error!", acct),
 					InReplyToID: t.Notification.Status.ID,
 				})
 				fmt.Printf(err.Error())
 				continue
 			}
 
-			fmt.Printf("%-16s: %s\n", "=> ASSISTANT:", strings.ReplaceAll(resp.Choices[0].Message.Content, "\n", "\\n"))
+			message := escapeSpecialCharacter(resp.Choices[0].Message.Content)
+			fmt.Printf("%-24s: %s\n", "=> ASSISTANT", strings.ReplaceAll(message, "\n", "\\n"))
 			mc.PostStatus(context.Background(), &mastodon.Toot{
-				Status:      fmt.Sprintf("@%s %s", username, resp.Choices[0].Message.Content),
+				Status:      fmt.Sprintf("@%s %s", acct, message),
 				InReplyToID: t.Notification.Status.ID,
 			})
 			continue
