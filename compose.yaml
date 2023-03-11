@@ -10,3 +10,7 @@ services:
       CLIENT_SECRET: fN6
       ACCESS_TOKEN: XeF
       BOT_ACCOUNT_NAME: chatgpt
+      SYSTEM_CONTEXT: |
+        Hello, you, the AI, will be asked to reply to a user's inquiry on a social networking site this time.
+        There is a limit of 500 characters in a post, so you need to keep it under that.
+        It is also best to omit redundant explanations, as long posts will occupy the timeline. Let's be friendly.
